@@ -1,0 +1,9 @@
+# OS cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Packaged uploads for the Chrome Web Store
+*.zip
+*.crx
+*.pem

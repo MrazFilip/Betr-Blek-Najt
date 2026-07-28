@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "Černý Rytíř Restyler",
+  "version": "1.0.0",
+  "description": "Automaticky upravuje stránky Černého Rytíře a umožňuje kvalitnější fungování při nákupu karet.",
+
+  "permissions": ["storage", "scripting"],
+
+  "host_permissions": [
+    "https://cernyrytir.cz/*",
+    "https://*.cernyrytir.cz/*"
+  ],
+
+  "content_scripts": [
+    {
+      "matches": [
+        "https://cernyrytir.cz/*",
+        "https://*.cernyrytir.cz/*"
+      ],
+      "js": ["tweaks.js", "defaults.js", "content.js"],
+      "run_at": "document_start",
+      "all_frames": false
+    }
+  ],
+
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+
+  "action": {
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    },
+    "default_popup": "popup.html",
+    "default_title": "Černý Rytíř Restyler"
+  }
+}

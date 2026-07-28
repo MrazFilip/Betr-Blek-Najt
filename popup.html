@@ -1,0 +1,149 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1a1a1a; --muted: #6b7280;
+    --line: #e5e7eb; --accent: #2563eb; --panel: #f9fafb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#1c1e22; --fg:#e8eaed; --muted:#9aa0a6; --line:#33363b; --accent:#7aa2f7; --panel:#232629; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    width: 300px; margin: 0; padding: 0;
+    font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--bg); color: var(--fg);
+  }
+
+  header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px; border-bottom: 1px solid var(--line);
+  }
+  header h1 { font-size: 14px; margin: 0; flex: 1; font-weight: 600; }
+
+  #list { padding: 4px 0; }
+  .tweak { display: flex; align-items: flex-start; gap: 10px; padding: 9px 14px; }
+  .tweak:hover { background: var(--panel); }
+  .tweak .txt { flex: 1; min-width: 0; }
+  .tweak .name { font-weight: 500; }
+  .tweak .desc { color: var(--muted); font-size: 11.5px; margin-top: 1px; }
+
+  /* switch */
+  .sw { position: relative; width: 34px; height: 19px; flex: none; margin-top: 1px; }
+  .sw input { opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+  .sw i {
+    position: absolute; inset: 0; border-radius: 999px;
+    background: var(--line); transition: .15s; pointer-events: none;
+  }
+  .sw i::after {
+    content: ""; position: absolute; top: 2px; left: 2px;
+    width: 15px; height: 15px; border-radius: 50%; background: #fff; transition: .15s;
+    box-shadow: 0 1px 3px rgba(0,0,0,.3);
+  }
+  .sw input:checked + i { background: var(--accent); }
+  .sw input:checked + i::after { transform: translateX(15px); }
+
+  body.disabled #list { opacity: .4; pointer-events: none; }
+
+  /* prefs table */
+  h2 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .04em;
+    color: var(--muted); margin: 0; padding: 10px 14px 4px;
+    border-top: 1px solid var(--line);
+  }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 5px 14px; vertical-align: middle; }
+  td.k { color: var(--muted); width: 54%; }
+  td.v { text-align: right; }
+  select, input[type="number"] {
+    background: var(--panel); color: var(--fg); font: inherit; font-size: 12px;
+    border: 1px solid var(--line); border-radius: 6px; padding: 3px 5px; max-width: 122px;
+  }
+  input[type="number"] { width: 62px; text-align: right; }
+  input[type="checkbox"].plain { width: 15px; height: 15px; margin: 0; accent-color: var(--accent); }
+  #prefs-note { padding: 8px 14px 10px; color: var(--muted); font-size: 11.5px; }
+  #prefs-wrap[hidden] + #prefs-note { display: block; }
+
+  footer {
+    padding: 9px 14px; border-top: 1px solid var(--line);
+    display: flex; align-items: center; gap: 6px;
+    color: var(--muted); font-size: 11px;
+  }
+  footer .spacer { flex: 1; }
+  .saved { opacity: 0; transition: opacity .2s; }
+  .saved.show { opacity: 1; }
+  button {
+    font: inherit; font-size: 11.5px; padding: 4px 9px; border-radius: 6px;
+    border: 1px solid var(--line); background: var(--panel); color: var(--fg); cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Černý Rytíř Restyler</h1>
+  <label class="sw" title="Zapnout / vypnout vše">
+    <input type="checkbox" id="enabled"><i></i>
+  </label>
+</header>
+
+<div id="list"></div>
+
+<h2>Nastavení tabulky</h2>
+
+<div id="prefs-wrap" hidden>
+  <table>
+    <tbody>
+      <tr>
+        <td class="k">Skladem (e-shop)</td>
+        <td class="v"><input type="checkbox" class="plain" id="p-eshop"></td>
+      </tr>
+      <tr>
+        <td class="k">Skladem (prodejna)</td>
+        <td class="v"><input type="checkbox" class="plain" id="p-store"></td>
+      </tr>
+      <tr>
+        <td class="k">Řazení</td>
+        <td class="v">
+          <select id="p-sort">
+            <option value="p_desc">Cena sestupně</option>
+            <option value="p_asc">Cena vzestupně</option>
+            <option value="a_asc">Abecedně</option>
+            <option value="a_desc">Abecedně obráceně</option>
+            <option value="i_desc">Nejnovější</option>
+          </select>
+        </td>
+      </tr>
+      <tr>
+        <td class="k">Řádků na stránku</td>
+        <td class="v"><input type="number" id="p-rows" min="1" max="500" step="1"></td>
+      </tr>
+      <tr>
+        <td class="k">Zobrazení</td>
+        <td class="v">
+          <select id="p-view">
+            <option value="ROWS">Řádky</option>
+            <option value="GRID">Mřížka</option>
+          </select>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div id="prefs-note">Načítání…</div>
+
+<footer>
+  <span class="saved" id="saved">Uloženo</span>
+  <span class="spacer"></span>
+  <button id="reset">Výchozí nastavení</button>
+</footer>
+
+<script src="tweaks.js"></script>
+<script src="defaults.js"></script>
+<script src="popup.js"></script>
+</body>
+</html>
