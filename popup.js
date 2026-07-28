@@ -162,7 +162,24 @@ const PREF_FALLBACK = {
   rowsPerPage: 12
 };
 
+/* The query string is the site's source of truth: on load the app reads these
+   params and writes them into localStorage, overwriting anything we put there.
+   Writing localStorage alone therefore appears to "change itself back".
+   Mapping taken from a real list URL:
+     ...\/mtg\/list?iso_e=true&f_f=true&iso_s=false&sort_by=p_desc&rpp=12 */
+const URL_PARAM = {
+  inStockOnlyEshop: 'iso_e',
+  inStockOnlyStore: 'iso_s',
+  sortType: 'sort_by',
+  rowsPerPage: 'rpp'
+};
+
+/* Login callback junk. Re-navigating with a used OAuth code can bounce the user
+   through auth again, so these are dropped from any URL we rebuild. */
+const AUTH_PARAMS = ['code', 'state', 'session_state', 'iss'];
+
 let prefsTabId = null;
+let prefsTabUrl = null;
 let applyingPrefs = false;   // guards against the change events we cause ourselves
 
 function note(text) {
@@ -217,10 +234,38 @@ async function runInPage(fn, args) {
   return out && out.result;
 }
 
+/* True when the current page carries the table params, i.e. the query string is
+   driving the table and must be updated rather than localStorage alone. */
+function urlDrivesPrefs() {
+  if (!prefsTabUrl) return false;
+  try {
+    const q = new URL(prefsTabUrl).searchParams;
+    return Object.values(URL_PARAM).some((p) => q.has(p));
+  } catch (e) { return false; }
+}
+
+/* Params win over localStorage when both are present, because the app will
+   overwrite localStorage from them on the next load. */
+function prefsFromUrl() {
+  const out = {};
+  if (!prefsTabUrl) return out;
+  let q;
+  try { q = new URL(prefsTabUrl).searchParams; } catch (e) { return out; }
+  for (const f of PREF_FIELDS) {
+    const raw = q.get(URL_PARAM[f.key]);
+    if (raw === null) continue;
+    if (f.type === 'bool') out[f.key] = raw === 'true';
+    else if (f.type === 'num') { const n = parseInt(raw, 10); if (Number.isFinite(n)) out[f.key] = n; }
+    else out[f.key] = raw;
+  }
+  return out;
+}
+
 async function loadPrefs() {
   const tab = await activeTab();
   if (!tab) { note('Nelze zjistit aktivní panel.'); return; }
   prefsTabId = tab.id;
+  prefsTabUrl = tab.url || null;
 
   let res;
   try {
@@ -233,7 +278,7 @@ async function loadPrefs() {
   }
   if (!res) { note('Nastavení tabulky se nepodařilo načíst.'); return; }
 
-  renderPrefs(res.prefs || {}, res.view);
+  renderPrefs(Object.assign({}, res.prefs || {}, prefsFromUrl()), res.view);
   $('prefs-wrap').hidden = false;
   note('');
 }
@@ -246,15 +291,18 @@ function renderPrefs(prefs, view) {
     /* Fall back only when the site has no value at all, so we never silently
        overwrite something the site set to a value we didn't expect. */
     const v = prefs[f.key] !== undefined ? prefs[f.key] : PREF_FALLBACK[f.key];
-    if (f.type === 'bool') el.checked = !!v;
-    else if (f.type === 'num') el.value = Number(v);
-    else {
-      /* Keep an unrecognised sortType visible instead of snapping to the first
-         option, which would misreport what the site is actually using. */
-      if (![...el.options].some((o) => o.value === v)) {
-        el.add(new Option(String(v) + ' (neznámé)', String(v)));
+    if (f.type === 'bool') {
+      el.checked = !!v;
+    } else {
+      /* Both remaining fields are <select>. Keep a value the dropdown doesn't
+         offer — the site allows rpp values outside 12/24/36/48, and snapping to
+         the nearest option would misreport what the page is actually using, then
+         silently change it on the next save. */
+      const s = String(v);
+      if (el.tagName === 'SELECT' && ![...el.options].some((o) => o.value === s)) {
+        el.add(new Option(s + ' (jiné)', s));
       }
-      el.value = String(v);
+      el.value = s;
     }
   }
 
@@ -276,11 +324,28 @@ function collectPrefs() {
   return patch;
 }
 
+/* Rebuild the page URL with the chosen values. Returns null when the current
+   page isn't param-driven, in which case localStorage alone is the right target. */
+function urlWithPrefs(patch) {
+  if (!urlDrivesPrefs()) return null;
+  let u;
+  try { u = new URL(prefsTabUrl); } catch (e) { return null; }
+  for (const f of PREF_FIELDS) {
+    u.searchParams.set(URL_PARAM[f.key], String(patch[f.key]));
+  }
+  for (const p of AUTH_PARAMS) u.searchParams.delete(p);
+  return u.toString();
+}
+
 async function savePrefs() {
   if (applyingPrefs || prefsTabId === null) return;
 
+  const patch = collectPrefs();
+
+  /* Write localStorage too: table_view_type has no URL parameter, and the value
+     is what the app reads on pages that carry no params. */
   try {
-    await runInPage(writeInPage, [collectPrefs(), $('p-view').value]);
+    await runInPage(writeInPage, [patch, $('p-view').value]);
   } catch (e) {
     note('Uložení selhalo: ' + e.message);
     return;
@@ -291,8 +356,15 @@ async function savePrefs() {
   clearTimeout(savedTimer);
   savedTimer = setTimeout(() => el.classList.remove('show'), 900);
 
-  /* The site reads these only on load, so refresh to make the change visible. */
-  chrome.tabs.reload(prefsTabId);
+  /* Navigating with updated params beats reloading: on reload the app would read
+     the old query string and put the old values straight back into localStorage. */
+  const next = urlWithPrefs(patch);
+  if (next && next !== prefsTabUrl) {
+    prefsTabUrl = next;
+    chrome.tabs.update(prefsTabId, { url: next });
+  } else {
+    chrome.tabs.reload(prefsTabId);
+  }
 }
 
 for (const f of PREF_FIELDS) {

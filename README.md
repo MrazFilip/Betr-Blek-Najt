@@ -1,7 +1,11 @@
-# Černý Rytíř Restyler
+# Betr Blek Najt Restyler
 
 Chrome extension (Manifest V3) that restyles cernyrytir.cz. All styling is
 authored in code; users only get on/off switches.
+
+> **Install the official version from the Chrome Web Store.** This repository is
+> the source, intended for development. The Web Store build is reviewed by Google
+> and updates itself automatically; a copy loaded unpacked from here does neither.
 
 ## Adding or changing a style
 
@@ -19,6 +23,16 @@ popup automatically — no other file needs editing.
   `
 }
 ```
+
+Optional fields:
+
+- `urlMatch` — restrict the tweak to certain pages. A string where `*` means
+  "any characters", or a RegExp. Omit it and the tweak applies everywhere.
+- `dynamicCss: () => string` — CSS computed at runtime, appended after `css`.
+- `setup: () => cleanupFn` — for tweaks that need behaviour, not just styling.
+  **Must return a cleanup function.** It runs the moment the tweak stops being
+  active, so switching the toggle off genuinely undoes the behaviour instead of
+  leaving a live listener behind.
 
 Notes:
 

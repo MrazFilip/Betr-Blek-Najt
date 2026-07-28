@@ -7,3 +7,8 @@ desktop.ini
 *.zip
 *.crx
 *.pem
+
+# Accidental npm artefacts from local test tooling — not part of the extension
+node_modules/
+package.json
+package-lock.json

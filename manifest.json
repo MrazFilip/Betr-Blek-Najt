@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Černý Rytíř Restyler",
+  "name": "Betr Blek Najt Restyler",
   "version": "1.0.0",
-  "description": "Automaticky upravuje stránky Černého Rytíře a umožňuje kvalitnější fungování při nákupu karet.",
+  "description": "Automaticky upravuje stránky cernyrytir.cz a umožňuje kvalitnější fungování při nákupu karet.",
 
   "permissions": ["storage", "scripting"],
 
@@ -36,6 +36,6 @@
       "128": "icon128.png"
     },
     "default_popup": "popup.html",
-    "default_title": "Černý Rytíř Restyler"
+    "default_title": "Betr Blek Najt Restyler"
   }
 }

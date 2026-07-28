@@ -31,11 +31,25 @@ function mergeSettings(stored, tweaks) {
    <html> (htmlClass), which the app does not manage, and it is written once per
    settings change with no observer. */
 
-function buildCss(settings, tweaks) {
+/* A tweak may limit itself to certain pages with `urlMatch`: either a RegExp, or
+   a string pattern where * means "any characters". Without one it applies
+   everywhere the content script runs. */
+function tweakMatchesUrl(t, url) {
+  if (!t.urlMatch) return true;
+  if (t.urlMatch instanceof RegExp) return t.urlMatch.test(url);
+  const rx = new RegExp(
+    '^' + String(t.urlMatch).replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$'
+  );
+  return rx.test(url);
+}
+
+function buildCss(settings, tweaks, url) {
   if (!settings.enabled) return '';
+  const here = url || (typeof location !== 'undefined' ? location.href : '');
   const parts = [];
   for (const t of tweaks) {
     if (!settings.on[t.id]) continue;
+    if (!tweakMatchesUrl(t, here)) continue;
 
     let css = t.css ? t.css.trim() : '';
 
@@ -55,4 +69,6 @@ function buildCss(settings, tweaks) {
   return parts.join('\n\n');
 }
 
-globalThis.SiteRestyler = { STORAGE_KEY, defaultSettings, mergeSettings, buildCss };
+globalThis.SiteRestyler = {
+  STORAGE_KEY, defaultSettings, mergeSettings, buildCss, tweakMatchesUrl
+};

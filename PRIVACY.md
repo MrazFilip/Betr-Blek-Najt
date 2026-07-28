@@ -1,6 +1,7 @@
 # Privacy Policy
 
-**Extension:** Restyler for cernyrytir.cz
+**Extension:** Betr Blek Najt
+**Source code:** https://github.com/MrazFilip/Betr-Blek-Najt
 **Last updated:** 27 July 2026
 
 ## Summary

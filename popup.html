@@ -47,21 +47,37 @@
 
   body.disabled #list { opacity: .4; pointer-events: none; }
 
-  /* prefs table */
-  h2 {
+  /* prefs table, in a collapsible section */
+  details#prefs { border-top: 1px solid var(--line); }
+  details#prefs > summary {
     font-size: 11px; text-transform: uppercase; letter-spacing: .04em;
-    color: var(--muted); margin: 0; padding: 10px 14px 4px;
-    border-top: 1px solid var(--line);
+    color: var(--muted); padding: 10px 14px;
+    cursor: pointer; user-select: none;
+    display: flex; align-items: center;
+    list-style: none;               /* Firefox default triangle */
+  }
+  details#prefs > summary::-webkit-details-marker { display: none; }
+  details#prefs > summary:hover { background: var(--panel); color: var(--fg); }
+  /* chevron, rotating when open */
+  details#prefs > summary::after {
+    content: ''; margin-left: auto;
+    width: 6px; height: 6px;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(45deg) translate(-2px, -2px);
+    transition: transform .15s ease;
+  }
+  details#prefs[open] > summary::after {
+    transform: rotate(-135deg) translate(-2px, -2px);
   }
   table { width: 100%; border-collapse: collapse; }
   td { padding: 5px 14px; vertical-align: middle; }
   td.k { color: var(--muted); width: 54%; }
   td.v { text-align: right; }
-  select, input[type="number"] {
+  select {
     background: var(--panel); color: var(--fg); font: inherit; font-size: 12px;
     border: 1px solid var(--line); border-radius: 6px; padding: 3px 5px; max-width: 122px;
   }
-  input[type="number"] { width: 62px; text-align: right; }
   input[type="checkbox"].plain { width: 15px; height: 15px; margin: 0; accent-color: var(--accent); }
   #prefs-note { padding: 8px 14px 10px; color: var(--muted); font-size: 11.5px; }
   #prefs-wrap[hidden] + #prefs-note { display: block; }
@@ -84,7 +100,7 @@
 <body>
 
 <header>
-  <h1>Černý Rytíř Restyler</h1>
+  <h1>Betr Blek Najt Restyler</h1>
   <label class="sw" title="Zapnout / vypnout vše">
     <input type="checkbox" id="enabled"><i></i>
   </label>
@@ -92,7 +108,9 @@
 
 <div id="list"></div>
 
-<h2>Nastavení tabulky</h2>
+<!-- Closed by default: no `open` attribute. -->
+<details id="prefs">
+<summary>Nastavení tabulky</summary>
 
 <div id="prefs-wrap" hidden>
   <table>
@@ -119,7 +137,14 @@
       </tr>
       <tr>
         <td class="k">Řádků na stránku</td>
-        <td class="v"><input type="number" id="p-rows" min="1" max="500" step="1"></td>
+        <td class="v">
+          <select id="p-rows">
+            <option value="12">12</option>
+            <option value="24">24</option>
+            <option value="36">36</option>
+            <option value="48">48</option>
+          </select>
+        </td>
       </tr>
       <tr>
         <td class="k">Zobrazení</td>
@@ -135,6 +160,7 @@
 </div>
 
 <div id="prefs-note">Načítání…</div>
+</details>
 
 <footer>
   <span class="saved" id="saved">Uloženo</span>

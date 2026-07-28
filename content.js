@@ -30,10 +30,40 @@
     }
   }
 
+  /* ---- setup hooks ----
+     A tweak may need behaviour, not just styling, via an optional setup()
+     function. It must return a cleanup function; we call it the moment the
+     tweak stops being active, so toggling off in the popup genuinely undoes
+     the behaviour instead of leaving a dead listener behind. */
+  const running = new Map();   // tweak id -> cleanup fn
+
+  function syncSetups(settings) {
+    for (const t of TWEAKS) {
+      if (typeof t.setup !== 'function') continue;
+      const should = settings.enabled &&
+                     !!settings.on[t.id] &&
+                     tweakMatchesUrl(t, location.href);
+      const isRunning = running.has(t.id);
+
+      if (should && !isRunning) {
+        try {
+          const stop = t.setup();
+          running.set(t.id, typeof stop === 'function' ? stop : () => {});
+        } catch (e) {
+          console.warn('[Restyler] setup failed for "' + t.id + '":', e.message);
+        }
+      } else if (!should && isRunning) {
+        try { running.get(t.id)(); } catch (e) { /* cleanup must not break apply */ }
+        running.delete(t.id);
+      }
+    }
+  }
+
   let current = null;
 
   function apply(settings) {
     current = settings;
+    syncSetups(settings);
     applyHtmlClasses(settings);
 
     const css = buildCss(settings, TWEAKS);
@@ -64,6 +94,19 @@
   };
   document.addEventListener('DOMContentLoaded', reassert);
   window.addEventListener('load', reassert);
+
+  /* The site is a single-page app: moving between the list and a card detail
+     changes the URL without reloading, so tweaks scoped with urlMatch would
+     otherwise stay stale. Polling is deliberate — patching history from an
+     isolated world doesn't see the page's own pushState calls, and a
+     MutationObserver here is what hung the page once already. A string compare
+     twice a second costs nothing and cannot loop. */
+  let lastHref = location.href;
+  setInterval(() => {
+    if (location.href === lastHref) return;
+    lastHref = location.href;
+    if (current) apply(current);
+  }, 500);
 
   /* Live updates from the popup. */
   chrome.storage.onChanged.addListener((changes) => {
