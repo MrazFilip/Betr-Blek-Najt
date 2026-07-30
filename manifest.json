@@ -18,8 +18,16 @@
         "https://*.cernyrytir.cz/*"
       ],
       "js": ["tweaks.js", "defaults.js", "content.js"],
+      "css": ["vendor/mana/css/mana.css"],
       "run_at": "document_start",
       "all_frames": false
+    }
+  ],
+
+  "web_accessible_resources": [
+    {
+      "resources": ["vendor/mana/fonts/*"],
+      "matches": ["https://cernyrytir.cz/*", "https://*.cernyrytir.cz/*"]
     }
   ],
 

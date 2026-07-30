@@ -54,6 +54,28 @@ Load from a normal folder such as `Documents\site-restyler`. Chrome's folder
 picker often fails on paths under `AppData\Local\Packages\...`, reporting a
 missing manifest even when it is present.
 
+## Third-party
+
+Mana symbols in card text are rendered with the **Mana** font by Andrew Gioia
+(<https://mana.andrewgioia.com/>), vendored under `vendor/mana/`. Font: SIL OFL
+1.1. CSS: MIT. Symbol designs © Wizards of the Coast. See
+`vendor/mana/LICENSE.md` for the notice and the list of modifications.
+
+Two manifest entries are both required for this, and it fails silently if either
+is missing:
+
+1. `content_scripts.css` registers `mana.css`, so its relative
+   `url("../fonts/mana.woff2")` resolves against the extension root rather than
+   the page.
+2. `web_accessible_resources` exposes `vendor/mana/fonts/*` to the site. The
+   URL resolves to `chrome-extension://<id>/…`, but the **page document** is
+   what fetches the font, and pages cannot read extension resources unless
+   they're declared web-accessible.
+
+The failure mode with (2) missing is deceptive: `ms-cost` still paints the
+coloured circles, so the symbols look almost right — but each glyph is a
+fallback box, because only the font file failed to load.
+
 ## Files
 
 | File | Role |
